@@ -154,7 +154,7 @@ ol {
 }
 
 .cata.new {
-  background: #ff205f;
+  background: #ffb320;
 }
 
 .cata.strategy {
@@ -465,7 +465,7 @@ ol {
 }
 
 .news-ticker-contant .nt-item span.new {
-  background: #ff205f;
+  background: #ffb320;
 }
 
 .news-ticker-contant .nt-item span.strategy {
@@ -493,7 +493,7 @@ ol {
   left: 0;
   top: 0;
   background: #000;
-  opacity: 0.65;
+  opacity: 0.35;
 }
 
 .feature-item .cata {
@@ -575,7 +575,7 @@ ol {
 }
 
 .recent-game-item .rgi-extra .rgi-heart {
-  background: #ff205f;
+  background: #ffb320;
 }
 
 /*----------------------
@@ -817,7 +817,7 @@ ol {
 }
 
 .top-comment .tc-item .tc-content p a {
-  color: #ff205f;
+  color: #ffb320;
 }
 
 .top-comment .tc-item .tc-content p span {
@@ -1017,7 +1017,7 @@ ol {
 }
 
 .single-blog-page .blog-thumb .rgi-extra .rgi-heart {
-  background: #ff205f;
+  background: #ffb320;
 }
 
 .single-blog-page .blog-content h3 {
@@ -1167,7 +1167,7 @@ ol {
 
 .community-post-list .community-post .post-content h5 {
   font-size: 16px;
-  color: #ff205f;
+  color: #ffb320;
   font-weight: 400;
   margin-bottom: 10px;
 }
