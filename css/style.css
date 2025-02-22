@@ -1541,3 +1541,59 @@ ol {
     font-size: 40px;
   }
 }
+
+/*-----------------
+  Checkout page
+--------------------*/
+.checkout {
+  background: #ffffff;
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  max-width: 600px;
+  margin: auto;
+}
+
+.checkout h2 {
+  color: #333;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.checkout .form-label {
+  font-weight: 600;
+  color: #555;
+}
+
+.checkout .form-control,
+.checkout .form-select {
+  border-radius: 8px;
+  border: 1px solid #ced4da;
+  transition: all 0.3s ease-in-out;
+}
+
+.checkout .form-control:focus,
+.checkout .form-select:focus {
+  border-color: #ff8c00;
+  box-shadow: 0px 0px 8px rgba(255, 140, 0, 0.5);
+}
+
+.checkout .btn-primary {
+  background-color: #ff8c00;
+  border-color: #ff8c00;
+  padding: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  width: 100%;
+  transition: all 0.3s ease-in-out;
+}
+
+.checkout .btn-primary:hover {
+  background-color: #e07b00;
+  border-color: #e07b00;
+}
+
+.checkout textarea {
+  resize: none;
+}
