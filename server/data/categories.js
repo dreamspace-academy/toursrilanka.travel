@@ -1,0 +1,81 @@
+const categories = [
+  {
+    name: "Adventure",
+    description: "Thrilling outdoor activities and adrenaline-pumping experiences",
+    icon: "Tent",
+    featured: true,
+    order: 1,
+  },
+  {
+    name: "Arts",
+    description: "Creative workshops and artistic experiences",
+    icon: "Palette",
+    featured: true,
+    order: 2,
+  },
+  {
+    name: "Cooking",
+    description: "Culinary classes and food-related experiences",
+    icon: "ChefHat",
+    featured: true,
+    order: 3,
+  },
+  {
+    name: "Culture",
+    description: "Historical tours and cultural immersion experiences",
+    icon: "Landmark",
+    featured: true,
+    order: 4,
+  },
+  {
+    name: "Cycling",
+    description: "Guided bike tours and cycling adventures",
+    icon: "Bike",
+    featured: false,
+    order: 5,
+  },
+  {
+    name: "Drinks",
+    description: "Wine tastings, brewery tours, and cocktail workshops",
+    icon: "Wine",
+    featured: true,
+    order: 6,
+  },
+  {
+    name: "Entertainment",
+    description: "Shows, performances, and interactive entertainment",
+    icon: "Music",
+    featured: false,
+    order: 7,
+  },
+  {
+    name: "Fitness",
+    description: "Workouts, yoga sessions, and wellness activities",
+    icon: "Dumbbell",
+    featured: false,
+    order: 8,
+  },
+  {
+    name: "Nature",
+    description: "Outdoor experiences in natural settings",
+    icon: "Leaf",
+    featured: true,
+    order: 9,
+  },
+  {
+    name: "Photography",
+    description: "Photo tours and photography workshops",
+    icon: "Camera",
+    featured: false,
+    order: 10,
+  },
+  {
+    name: "Sailing",
+    description: "Boating experiences and water adventures",
+    icon: "Ship",
+    featured: true,
+    order: 11,
+  },
+]
+
+module.exports = categories
