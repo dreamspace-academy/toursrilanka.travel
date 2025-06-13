@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@auth0/nextjs-auth0": "^3.0.0",
     "@aws-sdk/client-s3": "latest",
     "@aws-sdk/lib-storage": "latest",
     "@aws-sdk/s3-request-presigner": "latest",

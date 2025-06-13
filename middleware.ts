@@ -1,11 +1,9 @@
-import { NextResponse } from "next/server"
-import type { NextRequest } from "next/server"
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
-  // Get the pathname
-  const path = request.nextUrl.pathname
+  const path = request.nextUrl.pathname;
 
-  // Define public paths that don't require authentication
   const isPublicPath =
     path === "/login" ||
     path === "/register" ||
@@ -13,54 +11,25 @@ export function middleware(request: NextRequest) {
     path.startsWith("/api/auth") ||
     path.startsWith("/experiences") ||
     path.startsWith("/_next") ||
-    path.includes(".") // Static files
+    path.includes("."); // Static files
 
-  // Check if the user is authenticated
-  const isAuthenticated = request.cookies.has("isLoggedIn")
+  const sessionCookie = request.cookies.get("appSession"); // Auth0 default cookie name in Next.js SDK
 
-  // Get user data for role-based access
-  const userCookie = request.cookies.get("user")
-  let isAdmin = false
+  const isAuthenticated = !!sessionCookie;
 
-  if (userCookie) {
-    try {
-      const userData = JSON.parse(userCookie.value)
-      isAdmin = userData.role === "admin"
-    } catch (e) {
-      console.error("Error parsing user cookie:", e)
-    }
-  }
-
-  // Redirect logic
+  // Redirect unauthenticated users from protected routes
   if (!isAuthenticated && !isPublicPath) {
-    // Redirect to login if trying to access protected route while not authenticated
-    return NextResponse.redirect(new URL("/login", request.url))
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  if (isAuthenticated && (path === "/login" || path === "/register")) {
-    // Redirect to home if trying to access login/register while authenticated
-    return NextResponse.redirect(new URL("/", request.url))
-  }
+  // You cannot reliably check user roles in middleware (cookie is encrypted),
+  // so admin checks must happen in page-level/server-side logic.
 
-  // Check admin routes
-  if (path.startsWith("/admin") && !isAdmin) {
-    // Redirect non-admin users trying to access admin routes
-    return NextResponse.redirect(new URL("/", request.url))
-  }
-
-  return NextResponse.next()
+  return NextResponse.next();
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except:
-     * 1. /api/auth/* (authentication routes)
-     * 2. /_next/* (Next.js internals)
-     * 3. /fonts/* (static font files)
-     * 4. /images/* (static image files)
-     * 5. /favicon.ico, /site.webmanifest (static files)
-     */
     "/((?!_next/static|_next/image|favicon.ico|site.webmanifest|images|fonts).*)",
   ],
-}
+};

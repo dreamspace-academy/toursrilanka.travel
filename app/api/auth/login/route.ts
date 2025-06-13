@@ -1,41 +1,23 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { cookies } from "next/headers"
+import { handleLogin } from "@/lib/auth0"
 
-export async function POST(request: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
-    const body = await request.json()
-    const { email, password } = body
+    // Get the role from the query string
+    const searchParams = req.nextUrl.searchParams
+    const role = searchParams.get("role") || "user"
 
-    const response = await fetch(`${process.env.BACKEND_URL || "http://localhost:5000"}/api/auth/login`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    // Set the role in the Auth0 login request
+    return handleLogin(req, {
+      authorizationParams: {
+        // Pass the role as a custom parameter
+        role: role,
+        // Redirect back to the home page after login
+        redirect_uri: `${process.env.AUTH0_BASE_URL}/api/auth/callback?role=${role}`,
       },
-      body: JSON.stringify({ email, password }),
     })
-
-    const data = await response.json()
-
-    if (!response.ok) {
-      return NextResponse.json({ success: false, message: data.error || "Login failed" }, { status: response.status })
-    }
-
-    // Set the token in cookies
-    const cookieStore = await cookies()
-    cookieStore.set("token", data.token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 30 * 24 * 60 * 60, // 30 days
-      path: "/",
-    })
-
-    return NextResponse.json({
-      success: true,
-      user: data.user,
-    })
-  } catch (error: unknown) {
+  } catch (error) {
     console.error("Login error:", error)
-    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
-    return NextResponse.json({ success: false, message: errorMessage }, { status: 500 })
+    return NextResponse.json({ error: "Login failed" }, { status: 500 })
   }
 }
