@@ -7,8 +7,7 @@ import {
   cancelBooking,
   getUserBookings,
   getHostBookings,
-  // createPaymentIntent,  <-- remove this line
-  confirmBookingPayment,
+  confirmPayment, // ✅ Corrected from 'confirmBookingPayment'
 } from "../controllers/bookingController.js"
 
 import { protect, authorize } from "../middleware/auth.js"
@@ -17,11 +16,16 @@ import Booking from "../models/Booking.js"
 
 const router = express.Router()
 
+// Protect all routes below this middleware
 router.use(protect)
 
+// User-specific bookings
 router.route("/user").get(getUserBookings)
+
+// Host-specific bookings
 router.route("/host").get(authorize("host", "admin"), getHostBookings)
 
+// Admin: get all bookings / User: create booking
 router
   .route("/")
   .get(
@@ -30,14 +34,17 @@ router
       { path: "user", select: "name email" },
       { path: "experience", select: "title location imageUrl" },
     ]),
-    getBookings,
+    getBookings
   )
   .post(createBooking)
 
+// Get or update a specific booking
 router.route("/:id").get(getBooking).put(authorize("admin"), updateBooking)
 
+// Cancel a booking
 router.route("/:id/cancel").put(cancelBooking)
-// router.route("/:id/payment-intent").post(createPaymentIntent)  <-- remove this line
-router.route("/:id/confirm-payment").put(authorize("admin"), confirmBookingPayment)
+
+// Confirm payment (admin)
+router.route("/:id/confirm-payment").put(authorize("admin"), confirmPayment) // ✅ Fixed
 
 export default router

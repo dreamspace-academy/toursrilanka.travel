@@ -1,12 +1,11 @@
+// server/routes/uploadRoutes.js
+
 import express from "express";
-import { uploadAvatar, uploadMultiple } from "../controllers/uploadController.js";
-import { protect } from "../middleware/auth.js";
+import { fileUpload, deleteFile } from "../controllers/uploadController.js";
 
 const router = express.Router();
 
-router.use(protect);
-
-router.post("/avatar", uploadAvatar);
-router.post("/multiple", uploadMultiple);
+router.post("/", fileUpload);
+router.delete("/:filename", deleteFile);
 
 export default router;

@@ -1,5 +1,5 @@
-import mongoose from "mongoose";
-import slugify from "slugify";
+import mongoose from "mongoose"
+import slugify from "slugify"
 
 const ExperienceSchema = new mongoose.Schema(
   {
@@ -67,7 +67,32 @@ const ExperienceSchema = new mongoose.Schema(
       type: String,
       required: [true, "Please add a main image"],
     },
-    gallery: [String],
+    images: [
+      {
+        title: {
+          type: String,
+          required: true,
+        },
+        description: String,
+        data: {
+          type: String, // Base64 encoded image data
+          required: true,
+        },
+        contentType: {
+          type: String,
+          required: true,
+        },
+        size: Number,
+        isMain: {
+          type: Boolean,
+          default: false,
+        },
+        uploadedAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
     host: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -102,43 +127,19 @@ const ExperienceSchema = new mongoose.Schema(
       enum: ["flexible", "moderate", "strict"],
       default: "moderate",
     },
-    videos: [
-      {
-        title: {
-          type: String,
-          required: true,
-        },
-        description: String,
-        key: {
-          type: String,
-          required: true,
-        },
-        url: String,
-        duration: Number,
-        thumbnail: String,
-        isPublic: {
-          type: Boolean,
-          default: true,
-        },
-        uploadedAt: {
-          type: Date,
-          default: Date.now,
-        },
-      },
-    ],
   },
   {
     timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
   }
-);
+)
 
 // Create experience slug from the title
 ExperienceSchema.pre("save", function (next) {
-  this.slug = slugify(this.title, { lower: true });
-  next();
-});
+  this.slug = slugify(this.title, { lower: true })
+  next()
+})
 
 // Virtual for average rating
 ExperienceSchema.virtual("averageRating", {
@@ -148,7 +149,7 @@ ExperienceSchema.virtual("averageRating", {
   justOne: false,
   options: { sort: { createdAt: -1 } },
   count: true,
-});
+})
 
 // Virtual for reviews
 ExperienceSchema.virtual("reviews", {
@@ -156,7 +157,7 @@ ExperienceSchema.virtual("reviews", {
   localField: "_id",
   foreignField: "experience",
   justOne: false,
-});
+})
 
 // Virtual for bookings
 ExperienceSchema.virtual("bookings", {
@@ -164,6 +165,7 @@ ExperienceSchema.virtual("bookings", {
   localField: "_id",
   foreignField: "experience",
   justOne: false,
-});
+})
 
-export default mongoose.model("Experience", ExperienceSchema);
+const Experience = mongoose.model("Experience", ExperienceSchema)
+export default Experience

@@ -4,131 +4,152 @@ import type React from "react"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { useToast } from "@/hooks/use-toast"
-import { Loader2 } from "lucide-react"
+import { useAuth } from "@/contexts/AuthContext"
 
 export default function LoginPage() {
-  const router = useRouter()
-  const { toast } = useToast()
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  })
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
+  const [error, setError] = useState("")
+  const { login } = useAuth()
+  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    setError("")
 
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      })
+      const user = await login(email, password)
+      console.log("Login successful, user:", user)
 
-      const data = await response.json()
-
-      if (response.ok) {
-        toast({
-          title: "Login successful",
-          description: "You have been logged in successfully.",
-        })
-
-        // Redirect based on user role
-        if (data.user.role === "admin") {
+      // Check if user exists and has a role before accessing it
+      if (user && user.role) {
+        if (user.role === "admin") {
           router.push("/admin")
         } else {
           router.push("/")
         }
-
-        router.refresh()
       } else {
-        throw new Error(data.message || "Login failed")
+        setError("Invalid user data received")
       }
-    } catch (error) {
-      console.error("Login error:", error)
-      const errorMessage = error instanceof Error ? error.message : "Login failed. Please try again."
-      toast({
-        title: "Login failed",
-        description: errorMessage,
-        variant: "destructive",
-      })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Login failed"
+      setError(message)
+      console.error("Login error:", err)
     } finally {
       setIsLoading(false)
     }
   }
 
+  const fillCredentials = (userType: string) => {
+    switch (userType) {
+      case "admin":
+        setEmail("admin@toursrilanka.com")
+        setPassword("password123")
+        break
+      case "host":
+        setEmail("host@toursrilanka.com")
+        setPassword("password123")
+        break
+      case "user":
+        setEmail("user@toursrilanka.com")
+        setPassword("password123")
+        break
+    }
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4 py-12">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Login</CardTitle>
-          <CardDescription>Enter your credentials to access your account</CardDescription>
-        </CardHeader>
-        <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="max-w-md w-full space-y-8 p-8">
+        <div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">Sign in to TravelXP</h2>
+          <p className="mt-2 text-center text-sm text-gray-600">Access your admin dashboard</p>
+        </div>
+
+        <div className="bg-white p-8 rounded-lg shadow-md">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">{error}</div>}
+
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                Email
+              </label>
+              <input
                 id="email"
-                name="email"
                 type="email"
-                placeholder="your.email@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
-                value={formData.email}
-                onChange={handleChange}
+                disabled={isLoading}
+                placeholder="admin@toursrilanka.com"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
-                <Link href="/forgot-password" className="text-sm text-blue-600 hover:text-blue-800">
-                  Forgot password?
-                </Link>
-              </div>
-              <Input
+
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                Password
+              </label>
+              <input
                 id="password"
-                name="password"
                 type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 required
-                value={formData.password}
-                onChange={handleChange}
+                disabled={isLoading}
+                placeholder="password123"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
-          </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Logging in...
-                </>
-              ) : (
-                "Login"
-              )}
-            </Button>
-            <div className="text-center text-sm">
-              Don't have an account?{" "}
-              <Link href="/register" className="text-blue-600 hover:text-blue-800">
-                Register
-              </Link>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+            >
+              {isLoading ? "Signing in..." : "Sign in"}
+            </button>
+          </form>
+
+          <div className="mt-6">
+            <p className="text-sm font-medium text-center mb-2">Quick Login (Demo Accounts)</p>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                onClick={() => fillCredentials("admin")}
+                className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50"
+              >
+                Admin
+              </button>
+              <button
+                onClick={() => fillCredentials("host")}
+                className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50"
+              >
+                Host
+              </button>
+              <button
+                onClick={() => fillCredentials("user")}
+                className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50"
+              >
+                User
+              </button>
             </div>
-          </CardFooter>
-        </form>
-      </Card>
+          </div>
+
+          <div className="mt-4 p-4 bg-gray-50 rounded-md">
+            <p className="text-sm text-gray-600 mb-2">Demo Credentials:</p>
+            <p className="text-xs text-gray-500">
+              <strong>Admin:</strong> admin@toursrilanka.com / password123
+            </p>
+            <p className="text-xs text-gray-500">
+              <strong>Host:</strong> host@toursrilanka.com / password123
+            </p>
+            <p className="text-xs text-gray-500">
+              <strong>User:</strong> user@toursrilanka.com / password123
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

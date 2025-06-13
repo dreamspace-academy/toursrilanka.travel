@@ -1,253 +1,270 @@
-import Experience from "../models/Experience.js";
-import ErrorResponse from "../utils/errorResponse.js";
-import asyncHandler from "../middleware/asyncHandler.js";
-import { uploadFileToS3, deleteFileFromS3 } from "../utils/s3.js";
+import Experience from '../models/Experience.js'
+import asyncHandler from '../middleware/asyncHandler.js'
 
 // @desc    Get all experiences
 // @route   GET /api/experiences
 // @access  Public
-export const getExperiences = asyncHandler(async (req, res) => {
-  res.status(200).json(res.advancedResults);
-});
+export const getExperiences = asyncHandler(async (req, res, next) => {
+  try {
+    console.log("📋 Fetching experiences from database...")
+
+    const experiences = await Experience.find({ status: "published" })
+      .populate("host", "name email")
+      .populate("category", "name")
+      .sort({ createdAt: -1 })
+      .limit(50)
+
+    console.log(`✅ Found ${experiences.length} experiences`)
+
+    res.status(200).json({
+      success: true,
+      count: experiences.length,
+      data: experiences,
+    })
+  } catch (error) {
+    console.error("❌ Error fetching experiences:", error)
+    res.status(500).json({
+      success: false,
+      error: "Error fetching experiences",
+      details: error.message,
+    })
+  }
+})
 
 // @desc    Get single experience
 // @route   GET /api/experiences/:id
 // @access  Public
 export const getExperience = asyncHandler(async (req, res, next) => {
-  const experience = await Experience.findById(req.params.id)
-    .populate({
-      path: "host",
-      select: "name avatar bio",
+  try {
+    const experience = await Experience.findById(req.params.id)
+      .populate("host", "name email avatar bio")
+      .populate("category", "name description")
+
+    if (!experience) {
+      return res.status(404).json({
+        success: false,
+        error: `Experience not found with id of ${req.params.id}`,
+      })
+    }
+
+    res.status(200).json({
+      success: true,
+      data: experience,
     })
-    .populate({
-      path: "reviews",
-      match: { status: "approved" },
-      populate: {
-        path: "user",
-        select: "name avatar",
-      },
-    });
-
-  if (!experience) {
-    return next(new ErrorResponse(`Experience not found with id of ${req.params.id}`, 404));
+  } catch (error) {
+    console.error("❌ Error fetching experience:", error)
+    res.status(500).json({
+      success: false,
+      error: "Error fetching experience",
+      details: error.message,
+    })
   }
-
-  res.status(200).json({
-    success: true,
-    data: experience,
-  });
-});
+})
 
 // @desc    Create new experience
 // @route   POST /api/experiences
 // @access  Private/Host
 export const createExperience = asyncHandler(async (req, res, next) => {
-  req.body.host = req.user.id;
+  try {
+    req.body.host = req.user.id
+    req.body.status = "published"
 
-  if (req.user.role !== "host" && req.user.role !== "admin") {
-    return next(
-      new ErrorResponse(`User with ID ${req.user.id} is not authorized to create an experience`, 403)
-    );
+    console.log("📝 Creating new experience:", req.body.title)
+
+    const experience = await Experience.create(req.body)
+
+    res.status(201).json({
+      success: true,
+      data: experience,
+    })
+  } catch (error) {
+    console.error("❌ Error creating experience:", error)
+    res.status(500).json({
+      success: false,
+      error: "Error creating experience",
+      details: error.message,
+    })
   }
-
-  const experience = await Experience.create(req.body);
-
-  res.status(201).json({
-    success: true,
-    data: experience,
-  });
-});
+})
 
 // @desc    Update experience
 // @route   PUT /api/experiences/:id
 // @access  Private/Host
 export const updateExperience = asyncHandler(async (req, res, next) => {
-  let experience = await Experience.findById(req.params.id);
+  try {
+    let experience = await Experience.findById(req.params.id)
 
-  if (!experience) {
-    return next(new ErrorResponse(`Experience not found with id of ${req.params.id}`, 404));
+    if (!experience) {
+      return res.status(404).json({
+        success: false,
+        error: `Experience not found with id of ${req.params.id}`,
+      })
+    }
+
+    if (experience.host.toString() !== req.user.id && req.user.role !== "admin") {
+      return res.status(403).json({
+        success: false,
+        error: `User ${req.user.id} is not authorized to update this experience`,
+      })
+    }
+
+    experience = await Experience.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true,
+    })
+
+    res.status(200).json({
+      success: true,
+      data: experience,
+    })
+  } catch (error) {
+    console.error("❌ Error updating experience:", error)
+    res.status(500).json({
+      success: false,
+      error: "Error updating experience",
+      details: error.message,
+    })
   }
-
-  if (experience.host.toString() !== req.user.id && req.user.role !== "admin") {
-    return next(
-      new ErrorResponse(`User ${req.user.id} is not authorized to update this experience`, 403)
-    );
-  }
-
-  experience = await Experience.findByIdAndUpdate(req.params.id, req.body, {
-    new: true,
-    runValidators: true,
-  });
-
-  res.status(200).json({
-    success: true,
-    data: experience,
-  });
-});
+})
 
 // @desc    Delete experience
 // @route   DELETE /api/experiences/:id
 // @access  Private/Host
 export const deleteExperience = asyncHandler(async (req, res, next) => {
-  const experience = await Experience.findById(req.params.id);
+  try {
+    const experience = await Experience.findById(req.params.id)
 
-  if (!experience) {
-    return next(new ErrorResponse(`Experience not found with id of ${req.params.id}`, 404));
-  }
-
-  if (experience.host.toString() !== req.user.id && req.user.role !== "admin") {
-    return next(
-      new ErrorResponse(`User ${req.user.id} is not authorized to delete this experience`, 403)
-    );
-  }
-
-  if (experience.imageUrl) {
-    const key = experience.imageUrl.split("/").pop();
-    await deleteFileFromS3(`experiences/${key}`);
-  }
-
-  if (experience.gallery && experience.gallery.length > 0) {
-    for (const image of experience.gallery) {
-      const key = image.split("/").pop();
-      await deleteFileFromS3(`experiences/${key}`);
+    if (!experience) {
+      return res.status(404).json({
+        success: false,
+        error: `Experience not found with id of ${req.params.id}`,
+      })
     }
+
+    if (experience.host.toString() !== req.user.id && req.user.role !== "admin") {
+      return res.status(403).json({
+        success: false,
+        error: `User ${req.user.id} is not authorized to delete this experience`,
+      })
+    }
+
+    await Experience.findByIdAndDelete(req.params.id)
+
+    res.status(200).json({
+      success: true,
+      data: {},
+    })
+  } catch (error) {
+    console.error("❌ Error deleting experience:", error)
+    res.status(500).json({
+      success: false,
+      error: "Error deleting experience",
+      details: error.message,
+    })
   }
-
-  await experience.remove();
-
-  res.status(200).json({
-    success: true,
-    data: {},
-  });
-});
-
-// @desc    Get experiences by host
-// @route   GET /api/experiences/host/:hostId
-// @access  Public
-export const getHostExperiences = asyncHandler(async (req, res) => {
-  const experiences = await Experience.find({ host: req.params.hostId });
-
-  res.status(200).json({
-    success: true,
-    count: experiences.length,
-    data: experiences,
-  });
-});
+})
 
 // @desc    Get featured experiences
 // @route   GET /api/experiences/featured
 // @access  Public
-export const getFeaturedExperiences = asyncHandler(async (req, res) => {
-  const experiences = await Experience.find({ featured: true, status: "published" })
-    .populate({
-      path: "host",
-      select: "name avatar",
+export const getFeaturedExperiences = asyncHandler(async (req, res, next) => {
+  try {
+    const experiences = await Experience.find({
+      featured: true,
+      status: "published",
     })
-    .limit(8);
+      .populate("host", "name avatar")
+      .limit(8)
 
-  res.status(200).json({
-    success: true,
-    count: experiences.length,
-    data: experiences,
-  });
-});
+    res.status(200).json({
+      success: true,
+      count: experiences.length,
+      data: experiences,
+    })
+  } catch (error) {
+    console.error("❌ Error fetching featured experiences:", error)
+    res.status(500).json({
+      success: false,
+      error: "Error fetching featured experiences",
+      details: error.message,
+    })
+  }
+})
 
 // @desc    Get experiences by category
-// @route   GET /api/experiences/category/:categoryName
+// @route   GET /api/experiences/category/:categoryId
 // @access  Public
-export const getCategoryExperiences = asyncHandler(async (req, res) => {
-  const experiences = await Experience.find({
-    category: req.params.categoryName,
-    status: "published",
-  });
+export const getCategoryExperiences = asyncHandler(async (req, res, next) => {
+  try {
+    const categoryId = req.params.categoryId
 
-  res.status(200).json({
-    success: true,
-    count: experiences.length,
-    data: experiences,
-  });
-});
+    const experiences = await Experience.find({
+      category: categoryId,
+      status: "published",
+    })
+      .populate("host", "name email")
+      .populate("category", "name")
+      .sort({ createdAt: -1 })
+
+    res.status(200).json({
+      success: true,
+      count: experiences.length,
+      data: experiences,
+    })
+  } catch (error) {
+    console.error("❌ Error fetching category experiences:", error)
+    res.status(500).json({
+      success: false,
+      error: "Error fetching category experiences",
+      details: error.message,
+    })
+  }
+})
 
 // @desc    Upload experience images
 // @route   POST /api/experiences/:id/images
 // @access  Private/Host
 export const uploadExperienceImages = asyncHandler(async (req, res, next) => {
-  const experience = await Experience.findById(req.params.id);
+  try {
+    // TODO: Implement your actual image upload logic here (e.g., multer, cloudinary)
+    // For now, just send back a success placeholder
 
-  if (!experience) {
-    return next(new ErrorResponse(`Experience not found with id of ${req.params.id}`, 404));
+    res.status(200).json({
+      success: true,
+      message: "Image upload endpoint is working (implement upload logic)",
+    })
+  } catch (error) {
+    console.error("❌ Error uploading experience images:", error)
+    res.status(500).json({
+      success: false,
+      error: "Error uploading experience images",
+      details: error.message,
+    })
   }
+})
 
-  if (experience.host.toString() !== req.user.id && req.user.role !== "admin") {
-    return next(
-      new ErrorResponse(`User ${req.user.id} is not authorized to update this experience`, 403)
-    );
+// NEW: @desc    Get experiences created by the logged-in host
+// @route   GET /api/experiences/host
+// @access  Private/Host
+export const getHostExperiences = asyncHandler(async (req, res, next) => {
+  try {
+    const hostId = req.user.id
+
+    const experiences = await Experience.find({ host: hostId })
+      .populate("category", "name")
+      .sort({ createdAt: -1 })
+
+    res.status(200).json({
+      success: true,
+      count: experiences.length,
+      data: experiences,
+    })
+  } catch (error) {
+    console.error("❌ Error fetching host experiences:", error)
+    res.status(500).json({
+      success: false,
+      error: "Error fetching host experiences",
+      details: error.message,
+    })
   }
-
-  if (!req.files) {
-    return next(new ErrorResponse(`Please upload a file`, 400));
-  }
-
-  const mainImage = req.files.mainImage;
-  const galleryImages = req.files.gallery;
-
-  // Upload main image
-  if (mainImage) {
-    if (!mainImage.mimetype.startsWith("image")) {
-      return next(new ErrorResponse(`Please upload an image file`, 400));
-    }
-
-    if (mainImage.size > process.env.MAX_FILE_UPLOAD) {
-      return next(
-        new ErrorResponse(`Please upload an image less than ${process.env.MAX_FILE_UPLOAD}`, 400)
-      );
-    }
-
-    const result = await uploadFileToS3(mainImage, `experiences/${experience._id}/main`);
-    experience.imageUrl = result.url;
-  }
-
-  // Upload gallery images
-  if (galleryImages) {
-    const gallery = [];
-
-    if (!Array.isArray(galleryImages)) {
-      if (!galleryImages.mimetype.startsWith("image")) {
-        return next(new ErrorResponse(`Please upload image files`, 400));
-      }
-
-      if (galleryImages.size > process.env.MAX_FILE_UPLOAD) {
-        return next(
-          new ErrorResponse(`Please upload images less than ${process.env.MAX_FILE_UPLOAD}`, 400)
-        );
-      }
-
-      const result = await uploadFileToS3(galleryImages, `experiences/${experience._id}/gallery`);
-      gallery.push(result.url);
-    } else {
-      for (const file of galleryImages) {
-        if (!file.mimetype.startsWith("image")) {
-          return next(new ErrorResponse(`Please upload image files`, 400));
-        }
-
-        if (file.size > process.env.MAX_FILE_UPLOAD) {
-          return next(
-            new ErrorResponse(`Please upload images less than ${process.env.MAX_FILE_UPLOAD}`, 400)
-          );
-        }
-
-        const result = await uploadFileToS3(file, `experiences/${experience._id}/gallery`);
-        gallery.push(result.url);
-      }
-    }
-
-    experience.gallery = gallery;
-  }
-
-  await experience.save();
-
-  res.status(200).json({
-    success: true,
-    data: experience,
-  });
-});
+})

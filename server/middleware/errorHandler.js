@@ -1,11 +1,16 @@
+// server/middleware/errorHandler.js
+
 import ErrorResponse from "../utils/errorResponse.js";
 
-const errorHandler = (err, req, res) => {
+const errorHandler = (err, req, res, next) => {
   let error = { ...err };
   error.message = err.message;
 
   // Log to console for dev
-  console.log(err.stack);
+  console.log(`Error: ${err.message}`.red);
+  if (process.env.NODE_ENV === "development") {
+    console.log(err.stack);
+  }
 
   // Mongoose bad ObjectId
   if (err.name === "CastError") {
@@ -25,9 +30,22 @@ const errorHandler = (err, req, res) => {
     error = new ErrorResponse(message, 400);
   }
 
+  // JWT errors
+  if (err.name === "JsonWebTokenError") {
+    const message = "Invalid token";
+    error = new ErrorResponse(message, 401);
+  }
+
+  if (err.name === "TokenExpiredError") {
+    const message = "Token expired";
+    error = new ErrorResponse(message, 401);
+  }
+
+  // Always return JSON response
   res.status(error.statusCode || 500).json({
     success: false,
     error: error.message || "Server Error",
+    ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
   });
 };
 

@@ -1,5 +1,6 @@
 export interface Experience {
   id: string
+  _id?: string
   title: string
   description: string
   longDescription?: string
@@ -13,26 +14,60 @@ export interface Experience {
   duration: number
   maxGuests: number
   included?: string[]
+  requirements?: string[]
+  languages?: string[]
   category: string
   featured?: boolean
+  status?: "draft" | "published" | "archived"
+  cancellationPolicy?: "flexible" | "moderate" | "strict"
+  createdAt?: string
+  updatedAt?: string
+  images?: ExperienceImage[]
+}
+
+export interface ExperienceImage {
+  _id: string
+  title: string
+  description?: string
+  data: string // Base64 encoded image data
+  contentType: string
+  size: number
+  isMain: boolean
+  uploadedAt: string
+  url?: string // Generated URL for display
 }
 
 export interface Category {
+  _id: string
   id: string
   name: string
-  icon: string
+  icon?: string
   featured?: boolean
+  description?: string
+  createdAt?: string
+  updatedAt?: string
 }
 
 export interface User {
+  _id: string
   id: string
   name: string
   email: string
   avatar?: string
-  role: "user" | "host" | "admin"
+  role: "guest" | "host" | "admin"
+  status: "Active" | "Inactive" | "Suspended"
+  isVerified: boolean
+  bio?: string
+  location?: string
+  phoneNumber?: string
+  dateOfBirth?: string
+  createdAt?: string
+  updatedAt?: string
+  lastLogin?: string
 }
 
 export interface Booking {
+  _id: string
   id: string
   experienceId: string
   userId: string
@@ -40,31 +75,51 @@ export interface Booking {
   guests: number
   totalPrice: number
   status: "pending" | "confirmed" | "cancelled" | "completed"
+  paymentStatus: "pending" | "paid" | "refunded"
+  createdAt?: string
+  updatedAt?: string
 }
 
 export interface Review {
+  _id: string
   id: string
   experienceId: string
   userId: string
   rating: number
   comment: string
-  date: string
+  status: "pending" | "approved" | "rejected"
+  createdAt?: string
+  updatedAt?: string
 }
 
-export interface VideoPreview {
-  id: string
-  experienceId: string
-  url: string
-  thumbnail?: string
+export interface ApiResponse<T> {
+  success: boolean
+  data?: T
+  message?: string
+  error?: string
+  count?: number
+  pagination?: {
+    page: number
+    limit: number
+    total: number
+    pages: number
+  }
 }
 
-export interface ExperienceVideo {
-  _id: string
+export interface FormData {
   title: string
   description: string
-  url: string
-  thumbnail?: string
-  duration?: number
-  isPublic?: boolean
-  key: string
+  longDescription: string
+  price: string
+  duration: string
+  location: string
+  locationDescription: string
+  category: string
+  maxGuests: string
+  included: string[]
+  requirements: string[]
+  languages: string[]
+  cancellationPolicy: string
+  status: string
+  featured: boolean
 }
